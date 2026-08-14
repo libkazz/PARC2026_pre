@@ -1,0 +1,338 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>SmolVLA Macローカル 10エピソード再評価分析</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f3f6fa;
+      --surface: #fff;
+      --soft: #edf2f7;
+      --ink: #172338;
+      --muted: #617084;
+      --line: #d9e2ec;
+      --base: #65758b;
+      --lora: #137c70;
+      --positive: #08775f;
+      --negative: #b5473b;
+      --warning: #bd8424;
+      --accent: #2356a8;
+      --shadow: 0 14px 40px rgb(31 51 79 / 8%);
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic UI", "Yu Gothic", sans-serif;
+      line-height: 1.72;
+      letter-spacing: .01em;
+    }
+    a { color: var(--accent); }
+    code { font: .88em ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; overflow-wrap: anywhere; }
+    .page { width: min(1120px, calc(100% - 32px)); margin: 0 auto; padding: 40px 0 72px; }
+    .hero {
+      position: relative;
+      overflow: hidden;
+      padding: clamp(30px, 6vw, 64px);
+      border-radius: 28px;
+      background: #152842;
+      color: #f8fbff;
+      box-shadow: var(--shadow);
+    }
+    .hero::after {
+      content: "";
+      position: absolute;
+      top: -120px;
+      right: -80px;
+      width: 380px;
+      height: 380px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgb(56 202 178 / 30%), transparent 68%);
+    }
+    .eyebrow { margin: 0 0 10px; color: #81d9cb; font-size: .76rem; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; }
+    h1, h2, h3 { line-height: 1.35; }
+    h1 { position: relative; z-index: 1; max-width: 860px; margin: 0; font-size: clamp(2rem, 5vw, 3.6rem); letter-spacing: -.035em; }
+    h2 { margin: 0; font-size: clamp(1.45rem, 3vw, 2rem); letter-spacing: -.02em; }
+    h3 { margin: 0 0 9px; font-size: 1.04rem; }
+    .lead { position: relative; z-index: 1; max-width: 790px; margin: 20px 0 0; color: #cad6e6; font-size: clamp(1rem, 2vw, 1.15rem); }
+    .meta { position: relative; z-index: 1; display: flex; flex-wrap: wrap; gap: 8px 22px; margin-top: 28px; color: #a9b9cd; font-size: .84rem; }
+    .metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 15px; margin: 24px 0 54px; }
+    .metric, .panel, .card, .chart {
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+    .metric { min-height: 150px; padding: 22px; }
+    .metric-label { display: block; color: var(--muted); font-size: .8rem; font-weight: 800; }
+    .metric-value { display: block; margin-top: 9px; font-size: clamp(1.75rem, 4vw, 2.5rem); font-weight: 850; line-height: 1.1; letter-spacing: -.035em; }
+    .metric-note { display: block; margin-top: 10px; color: var(--muted); font-size: .78rem; }
+    .metric.lora .metric-value { color: var(--lora); }
+    section { margin-top: 56px; scroll-margin-top: 16px; }
+    .section-heading { display: grid; grid-template-columns: 48px 1fr; align-items: center; gap: 14px; margin-bottom: 22px; }
+    .section-number { display: grid; width: 48px; height: 48px; place-items: center; border-radius: 14px; background: #152842; color: #fff; font-weight: 850; }
+    .cards, .analysis, .actions, .split { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+    .card, .panel { padding: 23px; }
+    .card p, .panel p { margin: 0; color: var(--muted); }
+    .tag { display: inline-block; margin-bottom: 11px; padding: 3px 9px; border-radius: 999px; background: var(--soft); color: var(--accent); font-size: .71rem; font-weight: 850; letter-spacing: .06em; }
+    .settings { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1px; margin-top: 18px; overflow: hidden; border: 1px solid var(--line); border-radius: 14px; background: var(--line); }
+    .setting { padding: 14px; background: var(--soft); }
+    .setting dt { color: var(--muted); font-size: .7rem; }
+    .setting dd { margin: 2px 0 0; font-weight: 850; }
+    .chart { padding: clamp(20px, 4vw, 34px); }
+    .chart-caption { margin: 0 0 22px; color: var(--muted); font-size: .86rem; }
+    .bar-list { display: grid; gap: 18px; }
+    .bar-row { display: grid; grid-template-columns: 110px 1fr 70px; align-items: center; gap: 14px; }
+    .bar-label { font-weight: 750; }
+    .bar-track { height: 18px; overflow: hidden; border-radius: 999px; background: var(--soft); }
+    .bar-fill { height: 100%; border-radius: inherit; }
+    .bar-fill.base { width: 78%; background: var(--base); }
+    .bar-fill.lora { width: 77%; background: var(--lora); }
+    .bar-number { text-align: right; font-weight: 850; font-variant-numeric: tabular-nums; }
+    .legend { display: flex; flex-wrap: wrap; gap: 8px 20px; margin-top: 18px; color: var(--muted); font-size: .8rem; }
+    .legend span { display: inline-flex; align-items: center; gap: 7px; }
+    .legend i { width: 12px; height: 12px; border-radius: 3px; }
+    .legend .base { background: var(--base); }
+    .legend .lora { background: var(--lora); }
+    .split { margin-top: 17px; }
+    .mini { width: 100%; border-collapse: collapse; font-size: .88rem; }
+    .mini th, .mini td { padding: 9px 7px; border-bottom: 1px solid var(--line); }
+    .mini th { color: var(--muted); text-align: left; font-size: .74rem; }
+    .mini td:not(:first-child), .mini th:not(:first-child) { text-align: right; }
+    .mini tr:last-child td { border-bottom: 0; }
+    .intervals { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 11px; margin-top: 14px; }
+    .interval { padding: 14px; border-radius: 12px; background: var(--soft); }
+    .interval strong { display: block; font-size: 1.08rem; }
+    .interval span { color: var(--muted); font-size: .76rem; }
+    .delta-list { display: grid; gap: 10px; }
+    .delta-row { display: grid; grid-template-columns: minmax(180px, 320px) 1fr 64px; align-items: center; gap: 13px; }
+    .delta-label { font-size: .82rem; font-weight: 720; }
+    .delta-track { position: relative; height: 18px; overflow: hidden; border-radius: 5px; background: var(--soft); }
+    .delta-track::after { content: ""; position: absolute; inset: 0 auto 0 50%; width: 2px; background: var(--ink); opacity: .55; }
+    .delta-bar { position: absolute; top: 3px; height: 12px; border-radius: 4px; }
+    .delta-bar.pos { left: 50%; width: var(--width); background: var(--positive); }
+    .delta-bar.neg { right: 50%; width: var(--width); background: var(--negative); }
+    .delta-value { text-align: right; font-weight: 850; font-variant-numeric: tabular-nums; }
+    .pos-text { color: var(--positive); }
+    .neg-text { color: var(--negative); }
+    .table-wrap { margin-top: 18px; overflow-x: auto; border: 1px solid var(--line); border-radius: 18px; background: var(--surface); }
+    table.data { width: 100%; min-width: 900px; border-collapse: collapse; font-size: .84rem; }
+    .data th, .data td { padding: 12px 13px; border-bottom: 1px solid var(--line); }
+    .data th { background: var(--soft); color: var(--muted); text-align: left; font-size: .73rem; }
+    .data .num { text-align: right; font-variant-numeric: tabular-nums; }
+    .data tr:last-child td { border-bottom: 0; }
+    .callout { margin-top: 19px; padding: 18px 20px; border-left: 4px solid var(--warning); border-radius: 4px 12px 12px 4px; background: #fff7e8; }
+    .callout strong { display: block; margin-bottom: 4px; }
+    .callout p { margin: 0; color: #684d1a; }
+    .panel ul { margin: 9px 0 0; padding-left: 1.3em; }
+    .panel li + li { margin-top: 7px; }
+    .analysis .panel:first-child { border-top: 4px solid var(--lora); }
+    .analysis .panel:last-child { border-top: 4px solid var(--base); }
+    .priority { display: inline-grid; min-width: 28px; height: 28px; margin-right: 8px; place-items: center; border-radius: 8px; background: #dff4ef; color: var(--positive); font-size: .74rem; font-weight: 850; }
+    footer { margin-top: 54px; padding-top: 24px; border-top: 1px solid var(--line); color: var(--muted); font-size: .81rem; }
+    footer ul { padding-left: 1.2em; }
+    footer li + li { margin-top: 5px; }
+    .note { color: var(--muted); font-size: .8rem; }
+    @media (max-width: 860px) {
+      .metrics, .settings { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .split { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 620px) {
+      .page { width: min(100% - 20px, 1120px); padding-top: 10px; }
+      .hero { border-radius: 20px; }
+      .metrics, .cards, .analysis, .actions { grid-template-columns: 1fr; }
+      .metric { min-height: auto; }
+      .section-heading { grid-template-columns: 40px 1fr; }
+      .section-number { width: 40px; height: 40px; }
+      .bar-row { grid-template-columns: 82px 1fr 58px; gap: 8px; }
+      .delta-row { grid-template-columns: 1fr 54px; gap: 6px; }
+      .delta-track { grid-column: 1 / -1; grid-row: 2; }
+      .intervals { grid-template-columns: 1fr; }
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        color-scheme: dark;
+        --bg: #0f1723; --surface: #172231; --soft: #202d3d; --ink: #edf4fb;
+        --muted: #acb9c9; --line: #334358; --base: #91a0b5; --lora: #48b8a6;
+        --positive: #68d2b9; --negative: #ff9186; --accent: #8bb8ff; --shadow: none;
+      }
+      .hero { background: #101d30; }
+      .section-number { background: #2b4e79; }
+      .callout { background: #332b18; }
+      .callout p { color: #ead7a2; }
+      .priority { background: #153f39; }
+    }
+    @media print {
+      :root { --bg: #fff; --surface: #fff; --ink: #111; --muted: #444; --line: #bbb; --shadow: none; }
+      body { background: #fff; }
+      .page { width: 100%; padding: 0; }
+      .hero { color: #fff; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+      section { break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="hero">
+      <p class="eyebrow">10-episode follow-up · 2026-08-14</p>
+      <h1>SmolVLA Macローカル<br>複数seed再評価分析</h1>
+      <p class="lead">初回3エピソード評価を10エピソードへ拡張し、BaseとSpatial LoRAを全10タスク・環境seed 2026〜2035で比較した。負の転移仮説が再現するかを検証する。</p>
+      <div class="meta">
+        <span>SmolVLA / LIBERO-plus Spatial</span>
+        <span>Apple Silicon MPS</span>
+        <span>2 models × 10 tasks × 10 episodes</span>
+      </div>
+    </header>
+
+    <div class="metrics" aria-label="主要結果">
+      <article class="metric"><span class="metric-label">総評価試行数</span><strong class="metric-value">200</strong><span class="metric-note">各モデル100エピソード</span></article>
+      <article class="metric"><span class="metric-label">Base 成功率</span><strong class="metric-value">78.0%</strong><span class="metric-note">78 / 100 episodes</span></article>
+      <article class="metric lora"><span class="metric-label">Spatial LoRA 成功率</span><strong class="metric-value">77.0%</strong><span class="metric-note">77 / 100 episodes</span></article>
+      <article class="metric"><span class="metric-label">全体成功率差</span><strong class="metric-value">−1.0 pp</strong><span class="metric-note">95%区間は大きく重なる</span></article>
+    </div>
+
+    <section id="work">
+      <div class="section-heading"><span class="section-number">01</span><h2>実施した内容</h2></div>
+      <div class="cards">
+        <article class="card"><span class="tag">BASELINE</span><h3>Baseモデルを100試行</h3><p>全10タスクを各10エピソードで評価した。環境seedは各タスク共通で2026〜2035、batch sizeは1とした。</p></article>
+        <article class="card"><span class="tag">FINETUNED</span><h3>Spatial LoRAを100試行</h3><p>同じタスク順、環境seed、MPS設定で統合済みLoRAモデルを評価し、Baseとの成功率差を算出した。</p></article>
+        <article class="card"><span class="tag">PAIRED VIEW</span><h3>環境seed別の対応確認</h3><p>同じ環境seedでBaseのみ成功、LoRAのみ成功となった回数を数え、平均値だけでは見えない入れ替わりを確認した。</p></article>
+        <article class="card"><span class="tag">UNCERTAINTY</span><h3>信頼区間と再現性を確認</h3><p>成功率の95% Wilson区間を計算し、初回3エピソードで観測したタスク3・6・7の悪化が再現するかを評価した。</p></article>
+      </div>
+      <dl class="settings" aria-label="評価設定">
+        <div class="setting"><dt>対象タスク</dt><dd>10</dd></div>
+        <div class="setting"><dt>各タスク試行</dt><dd>10</dd></div>
+        <div class="setting"><dt>環境seed</dt><dd>2026–2035</dd></div>
+        <div class="setting"><dt>総試行</dt><dd>200</dd></div>
+        <div class="setting"><dt>Device</dt><dd>MPS</dd></div>
+        <div class="setting"><dt>Batch size</dt><dd>1</dd></div>
+        <div class="setting"><dt>AMP</dt><dd>Off</dd></div>
+        <div class="setting"><dt>Recording</dt><dd>Off</dd></div>
+      </dl>
+    </section>
+
+    <section id="results">
+      <div class="section-heading"><span class="section-number">02</span><h2>実測結果</h2></div>
+      <div class="chart">
+        <h3>LIBERO Spatial 全体成功率</h3>
+        <p class="chart-caption">標準10タスク × 各10エピソード。バーの分母は各モデル100エピソード。</p>
+        <div class="bar-list" role="img" aria-label="Base成功率78.0%、Spatial LoRA成功率77.0%">
+          <div class="bar-row"><span class="bar-label">Base</span><div class="bar-track"><div class="bar-fill base"></div></div><span class="bar-number">78.0%</span></div>
+          <div class="bar-row"><span class="bar-label">Spatial LoRA</span><div class="bar-track"><div class="bar-fill lora"></div></div><span class="bar-number">77.0%</span></div>
+        </div>
+        <div class="legend" aria-hidden="true"><span><i class="base"></i>Base: 78成功 / 22失敗</span><span><i class="lora"></i>LoRA: 77成功 / 23失敗</span></div>
+      </div>
+
+      <div class="split">
+        <article class="panel">
+          <h3>評価時間</h3>
+          <table class="mini"><thead><tr><th>モデル</th><th>全体</th><th>1 episode</th></tr></thead><tbody>
+            <tr><td>Base</td><td>1,303.814秒</td><td>13.038秒</td></tr>
+            <tr><td>Spatial LoRA</td><td>1,404.093秒</td><td>14.041秒</td></tr>
+            <tr><td>LoRA − Base</td><td>+100.280秒</td><td>+1.003秒</td></tr>
+          </tbody></table>
+        </article>
+        <article class="panel">
+          <h3>全体成功率の95% Wilson区間</h3>
+          <div class="intervals"><div class="interval"><strong>68.9–85.0%</strong><span>Base · 78/100</span></div><div class="interval"><strong>67.8–84.2%</strong><span>Spatial LoRA · 77/100</span></div></div>
+          <p class="note">区間は大きく重なり、全体−1ポイントを明確な性能差とは判断できない。</p>
+        </article>
+      </div>
+
+      <div class="chart" style="margin-top:18px">
+        <h3>タスク別 成功率差（Spatial LoRA − Base）</h3>
+        <p class="chart-caption">中央が0。左は悪化、右は改善。1成功差は10ポイント。</p>
+        <div class="delta-list" role="img" aria-label="タスク3はマイナス20、タスク7はプラス30、タスク8はマイナス30ポイント">
+          <div class="delta-row"><span class="delta-label">0 · テーブル中央</span><div class="delta-track"></div><span class="delta-value">0</span></div>
+          <div class="delta-row"><span class="delta-label">1 · クッキーボックス隣</span><div class="delta-track"><i class="delta-bar neg" style="--width:16.667%"></i></div><span class="delta-value neg-text">−10</span></div>
+          <div class="delta-row"><span class="delta-label">2 · 皿の隣</span><div class="delta-track"><i class="delta-bar pos" style="--width:16.667%"></i></div><span class="delta-value pos-text">+10</span></div>
+          <div class="delta-row"><span class="delta-label">3 · ラメキン隣</span><div class="delta-track"><i class="delta-bar neg" style="--width:33.333%"></i></div><span class="delta-value neg-text">−20</span></div>
+          <div class="delta-row"><span class="delta-label">4 · クッキーボックス上</span><div class="delta-track"><i class="delta-bar pos" style="--width:16.667%"></i></div><span class="delta-value pos-text">+10</span></div>
+          <div class="delta-row"><span class="delta-label">5 · ラメキン上</span><div class="delta-track"></div><span class="delta-value">0</span></div>
+          <div class="delta-row"><span class="delta-label">6 · ストーブ上</span><div class="delta-track"></div><span class="delta-value">0</span></div>
+          <div class="delta-row"><span class="delta-label">7 · 木製キャビネット上</span><div class="delta-track"><i class="delta-bar pos" style="--width:50%"></i></div><span class="delta-value pos-text">+30</span></div>
+          <div class="delta-row"><span class="delta-label">8 · 上段引き出し内</span><div class="delta-track"><i class="delta-bar neg" style="--width:50%"></i></div><span class="delta-value neg-text">−30</span></div>
+          <div class="delta-row"><span class="delta-label">9 · 皿とラメキンの間</span><div class="delta-track"></div><span class="delta-value">0</span></div>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table class="data">
+          <thead><tr><th>ID</th><th>黒いボウルを皿へ移動</th><th class="num">Base</th><th class="num">LoRA</th><th class="num">差</th><th class="num">Baseのみ</th><th class="num">LoRAのみ</th></tr></thead>
+          <tbody>
+            <tr><td>0</td><td>テーブル中央から</td><td class="num">9/10</td><td class="num">9/10</td><td class="num">0 pp</td><td class="num">1</td><td class="num">1</td></tr>
+            <tr><td>1</td><td>クッキーボックスの隣から</td><td class="num">10/10</td><td class="num">9/10</td><td class="num neg-text">−10 pp</td><td class="num">1</td><td class="num">0</td></tr>
+            <tr><td>2</td><td>皿の隣から</td><td class="num">8/10</td><td class="num">9/10</td><td class="num pos-text">+10 pp</td><td class="num">0</td><td class="num">1</td></tr>
+            <tr><td>3</td><td>ラメキンの隣から</td><td class="num">8/10</td><td class="num">6/10</td><td class="num neg-text">−20 pp</td><td class="num">4</td><td class="num">2</td></tr>
+            <tr><td>4</td><td>クッキーボックスの上から</td><td class="num">9/10</td><td class="num">10/10</td><td class="num pos-text">+10 pp</td><td class="num">0</td><td class="num">1</td></tr>
+            <tr><td>5</td><td>ラメキンの上から</td><td class="num">5/10</td><td class="num">5/10</td><td class="num">0 pp</td><td class="num">2</td><td class="num">2</td></tr>
+            <tr><td>6</td><td>ストーブの上から</td><td class="num">7/10</td><td class="num">7/10</td><td class="num">0 pp</td><td class="num">1</td><td class="num">1</td></tr>
+            <tr><td>7</td><td>木製キャビネットの上から</td><td class="num">4/10</td><td class="num">7/10</td><td class="num pos-text">+30 pp</td><td class="num">1</td><td class="num">4</td></tr>
+            <tr><td>8</td><td>木製キャビネットの上段引き出しから</td><td class="num">8/10</td><td class="num">5/10</td><td class="num neg-text">−30 pp</td><td class="num">4</td><td class="num">1</td></tr>
+            <tr><td>9</td><td>皿とラメキンの間から</td><td class="num">10/10</td><td class="num">10/10</td><td class="num">0 pp</td><td class="num">0</td><td class="num">0</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <aside class="callout"><strong>初回の「task 3・6・7がすべて悪化」は再現しなかった</strong><p>3タスク合計はBase 19/30、LoRA 20/30。task 3は悪化、6は同率、7は改善した。一方、task 8が新たに−30ポイントとなった。</p></aside>
+
+      <div class="split">
+        <article class="panel"><h3>対象3タスクの環境seed別入れ替わり</h3><ul>
+          <li><strong>task 3:</strong> Baseのみ 2027・2029・2030・2034 / LoRAのみ 2028・2033</li>
+          <li><strong>task 6:</strong> Baseのみ 2027 / LoRAのみ 2028</li>
+          <li><strong>task 7:</strong> Baseのみ 2029 / LoRAのみ 2026・2027・2033・2035</li>
+        </ul></article>
+        <article class="panel"><h3>再現性上の制約</h3><p>環境seedは対応しているがpolicy RNGは評価全体で連続する。成功時の早期終了により後続episodeのpolicy乱数系列がモデル間でずれるため、厳密な対応比較にはepisodeごとのRNGリセットが必要である。</p></article>
+      </div>
+    </section>
+
+    <section id="discussion">
+      <div class="section-heading"><span class="section-number">03</span><h2>考察</h2></div>
+      <div class="analysis">
+        <article class="panel"><h3>実測から確認できた事実</h3><ul>
+          <li>MacローカルMPSで2モデル合計200エピソードを完走した。</li>
+          <li>全体成功数はBase 78、Spatial LoRA 77で、差は1成功だった。</li>
+          <li>task 3は8/10から6/10、task 8は8/10から5/10へ低下した。</li>
+          <li>task 6は7/10で同率、task 7は4/10から7/10へ改善した。</li>
+          <li>LoRA評価はBaseより1エピソード平均1.003秒長かった。</li>
+        </ul></article>
+        <article class="panel"><h3>結果から考えられること</h3><ul>
+          <li>全体−1ポイントは信頼区間を踏まえると明確な性能低下とは言えない。</li>
+          <li>初回3試行の3タスク一律悪化は標本変動の影響が大きかった。</li>
+          <li>task 3の把持失敗傾向は残り、corrective data候補として優先度が高い。</li>
+          <li>task 8は初回の改善から今回の悪化へ反転しており、RNG依存と失敗段階の切り分けが必要である。</li>
+        </ul></article>
+      </div>
+    </section>
+
+    <section id="improvements">
+      <div class="section-heading"><span class="section-number">04</span><h2>改善点</h2></div>
+      <div class="actions">
+        <article class="panel"><h3><span class="priority">P1</span>task 8の失敗を分類</h3><p>失敗5件の動画と状態遷移を保存し、到達・把持・配置の失敗段階を確定する。分類前に追加配分を決めない。</p></article>
+        <article class="panel"><h3><span class="priority">P1</span>policy RNGをepisode単位で固定</h3><p>Torch・NumPy・Python RNGも各episode開始時に同じ値へ戻し、モデル間・試行数間で比較可能な評価にする。</p></article>
+        <article class="panel"><h3><span class="priority">P2</span>20 seed以上へ拡張</h3><p>task 3・8を中心に20 seed以上へ増やし、20〜30ポイント差が再現するかを対応差と信頼区間で確認する。</p></article>
+        <article class="panel"><h3><span class="priority">P2</span>データ配分を再設計</h3><p>旧task 3・6・7への一律40%配分は採用しない。task 3と分類後のtask 8をcorrective候補、task 6・7をrehearsalとする。</p></article>
+        <article class="panel"><h3><span class="priority">P3</span>段階別指標を保存</h3><p>成功率に加えて到達率、把持率、搬送率、配置述語達成率を保存し、失敗段階の移動を検知する。</p></article>
+        <article class="panel"><h3><span class="priority">P3</span>評価時間を交互順で測定</h3><p>Macの温度・負荷を揃え、Base/LoRAの実行順を交換して+1.003秒/episodeが再現するか確認する。</p></article>
+      </div>
+    </section>
+
+    <footer>
+      <strong>根拠データと再現手順</strong>
+      <ul>
+        <li>実行Notebook: <a href="../../examples/smolvla_libero_spatial_lora_mac.ipynb"><code>examples/smolvla_libero_spatial_lora_mac.ipynb</code></a></li>
+        <li>Base評価: <code>/Users/takemo/PARC2026_outputs/20260814_121853/eval_10ep_seed2026/base/eval_info.json</code></li>
+        <li>Spatial LoRA評価: <code>/Users/takemo/PARC2026_outputs/20260814_121853/eval_10ep_seed2026/spatial_lora/eval_info.json</code></li>
+        <li>詳細分析: <a href="libero-spatial-negative-transfer-analysis.md"><code>libero-spatial-negative-transfer-analysis.md</code></a></li>
+        <li>初回3エピソード版: <a href="smolvla-mac-local-results-20260814.html"><code>smolvla-mac-local-results-20260814.html</code></a></li>
+      </ul>
+      <p>主要数値は実測JSONと照合した。事実と解釈を分け、成功率は小数第1位、時間は小数第3位へ丸めている。</p>
+    </footer>
+  </main>
+</body>
+</html>
