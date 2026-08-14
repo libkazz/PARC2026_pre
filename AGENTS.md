@@ -2,29 +2,49 @@
 
 ## プロジェクト構成とモジュール
 
-このリポジトリは PARC 2026 予選用の評価キットです。評価処理は `pipeline/` にあり、`pipeline/__main__.py` がコマンドラインの入口です。Track 1 のタスク登録とメタデータは `compe/t1/`、参加者向けポリシーサーバーのひな形は `submission_template/`、学習例は `examples/` に配置します。ルートの `evaluate.py` は一括採点、`validate_submission.py` は提出物検査を担当します。単体テストは `tests/` に置き、対象のエントリーポイントに対応させてください。
+- `pipeline/`: 評価処理本体。`pipeline/__main__.py` がコマンドラインの入口です。
+- `compe/t1/`: Track 1 のタスク登録とメタデータです。
+- `submission_template/`: 参加者向けポリシーサーバーのひな形です。
+- `examples/`: 学習用 Notebook などの参考実装です。
+- `evaluate.py`: 提出 ZIP を一括採点します。
+- `validate_submission.py`: 提出物の構造と動作を検査します。
+- `tests/`: `pytest` のテストを対象機能ごとに配置します。
 
 ## ビルド・テスト・開発コマンド
 
-- `bash setup.sh`: Python 3.10 の仮想環境を作り、固定済み依存関係と LIBERO アセットを取得します。初回のみ実行し、10〜20分程度を見込んでください。
-- `source env.sh`: 作成済み環境と必要なパスをシェルごとに有効化します。
-- `pytest tests`: 単体テストとスモークテストをすべて実行します。
-- `python validate_submission.py submission_template/`: 必須ファイル、エンドポイント、応答形式、レイテンシを検査します。
-- `python -m pipeline --server-url http://localhost:8000 --track track1 --n-episodes 2 --max-steps 10`: 起動中のポリシーサーバーを短時間で評価します。
-- `docker build -t parc2026 .`: CPU 用の参照環境をビルドします。
+- 開発・テストはホストの Python 環境ではなく Docker 内で行います。
+- `docker build -t parc2026 .`: 依存関係とアセットを含む CPU 用の開発環境を構築します。
+- `docker run -it --rm parc2026`: 開発用コンテナのシェルを開きます。
+- `docker run --rm parc2026 pytest tests`: テスト一式を実行します。
+- `docker run --rm parc2026 python validate_submission.py submission_template/`: テンプレートの必須ファイル、API、応答形式、レイテンシを検査します。
+- `docker run --rm -v "$PWD/my_submission.zip:/sub.zip:ro" parc2026 python evaluate.py /sub.zip --n-episodes 2`: 提出 ZIP を短時間で評価します。
 
 ## コーディング規約と命名
 
-Python 3.10 を対象とし、インデントは4スペースにします。既存の PEP 8 風の書式に合わせ、モジュール・関数・変数は `snake_case`、クラスは `PascalCase`、定数は `UPPER_CASE` を使います。公開関数や意図が分かりにくいデータ構造には型ヒントを付けてください。ポリシーの HTTP・シリアライズ処理は `submission_template/policy_server.py` との互換性を維持します。formatter や linter の設定は未配置のため、周辺コードのスタイルを守り、変更範囲を絞ってください。
+- Python 3.10 を対象とし、インデントは4スペースにします。
+- モジュール・関数・変数は `snake_case`、クラスは `PascalCase`、定数は `UPPER_CASE` とします。
+- 公開関数や複雑なデータ構造には型ヒントを付けます。
+- `submission_template/policy_server.py` の HTTP・シリアライズ仕様との互換性を維持します。
+- formatter・linter 設定は未配置のため、周辺コードの PEP 8 風スタイルに合わせます。
 
 ## テスト方針
 
-テストには `pytest` を使います。ファイル名は `test_<対象>.py`、関数名は `test_<振る舞い>()` としてください。不具合修正には回帰テストを追加し、特に検証エラー、タスク絞り込み、採点、アーカイブ安全性の境界を確認します。ファイル操作には `tmp_path`、入力差分には parametrization を優先します。動的スモークテストは依存不足で skip される場合があるため、提出前に `setup.sh` で作成した環境でも実行してください。
+- コード変更後はイメージを再ビルドし、`docker run --rm parc2026 pytest tests` を実行します。
+- テストファイルは `test_<対象>.py`、関数は `test_<振る舞い>()` と命名します。
+- 不具合修正には回帰テストを追加し、検証エラー、採点、タスク絞り込み、安全な ZIP 処理を確認します。
+- ファイル操作には `tmp_path`、入力差分には `pytest.mark.parametrize` を優先します。
+- 動的スモークテストを含め、skip の有無を Docker のテスト結果で確認します。
 
 ## コミットとプルリクエスト
 
-直近の履歴では、`README:` のような対象名を付けた簡潔な日本語要約が使われています。新規コミットは日本語の Conventional Commits とし、例は `fix: 不正な提出ZIPの検証を強化` です。1コミットを1つの論理的意図に限定してください。PR には動機、変更した振る舞い、確認コマンドと結果、関連 Issue を記載します。Notebook や文書で表示結果が重要な場合のみスクリーンショットを添付します。Draft で作成し、CI とレビュー指摘への対応後に Ready for review へ変更してください。
+- 日本語の Conventional Commits を使います。例: `fix: 不正な提出ZIPの検証を強化`。
+- 1コミットを1つの論理的意図に限定します。
+- PR には動機、変更内容、Docker での確認コマンドと結果、関連 Issue を記載します。
+- Notebook や文書の表示変更では、必要に応じてスクリーンショットを添付します。
+- Draft で作成し、CI とレビュー指摘への対応後に Ready for review へ変更します。
 
 ## セキュリティと設定上の注意
 
-生成された `venv/`、`env.sh`、取得済み LIBERO ディレクトリ、モデル重み、提出物、評価結果はコミットしないでください。ZIP 展開、外部依存元、リクエストのタイムアウト、パス処理はセキュリティ上重要です。`validate_submission.py` の検査を維持してください。
+- 取得済み LIBERO ディレクトリ、モデル重み、提出物、評価結果はコミットしません。
+- ZIP 展開、外部依存元、タイムアウト、パス処理はセキュリティ上重要です。
+- `validate_submission.py` の安全性検査を維持してください。
