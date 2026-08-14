@@ -16,8 +16,10 @@
 - `docker build -t parc2026 .`: 依存関係とアセットを含む CPU 用の開発環境を構築します。
 - `docker run -it --rm parc2026`: 開発用コンテナのシェルを開きます。
 - `docker run --rm parc2026 pytest tests`: テスト一式を実行します。
-- `docker run --rm parc2026 python validate_submission.py submission_template/`: テンプレートの必須ファイル、API、応答形式、レイテンシを検査します。
-- `docker run --rm -v "$PWD/my_submission.zip:/sub.zip:ro" parc2026 python evaluate.py /sub.zip --n-episodes 2`: 提出 ZIP を短時間で評価します。
+- `docker run --rm parc2026 python validate_submission.py submission_template/`:
+  テンプレートの必須ファイル、API、応答形式、レイテンシを検査します。
+- `docker run --rm -v "$PWD/my_submission.zip:/sub.zip:ro" parc2026 python evaluate.py`
+  `/sub.zip --n-episodes 2`: 提出 ZIP を短時間で評価します。
 
 ## コーディング規約と命名
 
@@ -42,6 +44,15 @@
 - PR には動機、変更内容、Docker での確認コマンドと結果、関連 Issue を記載します。
 - Notebook や文書の表示変更では、必要に応じてスクリーンショットを添付します。
 - Draft で作成し、CI とレビュー指摘への対応後に Ready for review へ変更します。
+
+## アーキテクチャ意思決定記録（ADR）
+
+- アーキテクチャ、依存関係、セキュリティ、評価仕様、開発・本番環境、運用方法に影響する重要な判断は ADR に記録します。
+- ADR は `docs/ADR-NNNN-<topic>.md` に連番で作成し、最低限「ステータス」「決定日」「背景」「決定」「影響」「検証結果」を記載します。
+- 既存の意思決定を変更または廃止する場合は、元の ADR を削除せず、ステータスと後継 ADR への参照を更新します。
+- ADR が必要な変更では、実装と同じ PR で ADR を作成または更新します。
+- 単純な不具合修正、既存方針どおりの実装、機械的な更新は、新たな意思決定を伴わない限り ADR の対象外です。
+- 認証情報、個人情報、非公開の接続情報などの機密情報は ADR に記載しません。
 
 ## セキュリティと設定上の注意
 
