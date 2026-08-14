@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SmolVLA LIBERO-Spatial 30ep 実行レポート</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #182230;
+      --muted: #5b6878;
+      --line: #dbe3ec;
+      --panel: #ffffff;
+      --canvas: #f3f6f9;
+      --blue: #1769e0;
+      --blue-soft: #eaf2ff;
+      --green: #087f5b;
+      --green-soft: #e7f7f1;
+      --orange: #c45f0a;
+      --orange-soft: #fff2e5;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: var(--canvas);
+      font-family: Inter, "Noto Sans JP", "Hiragino Sans", system-ui, sans-serif;
+      line-height: 1.65;
+    }
+
+    main {
+      width: min(1120px, calc(100% - 32px));
+      margin: 32px auto 64px;
+    }
+
+    header, section {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      box-shadow: 0 8px 24px rgba(28, 42, 58, .06);
+    }
+
+    header {
+      padding: 36px;
+      background: linear-gradient(135deg, #0d3c7b, #1769e0 65%, #4c8ff0);
+      color: #fff;
+    }
+
+    header p { max-width: 780px; margin: 10px 0 0; opacity: .9; }
+    h1 { margin: 0; font-size: clamp(28px, 4vw, 44px); line-height: 1.2; }
+    h2 { margin: 0 0 18px; font-size: 22px; }
+    h3 { margin: 0 0 8px; font-size: 15px; color: var(--muted); }
+
+    section { margin-top: 20px; padding: 28px; }
+
+    .eyebrow {
+      margin-bottom: 8px;
+      font-size: 12px;
+      font-weight: 750;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      opacity: .78;
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 20px;
+    }
+
+    .card {
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 13px;
+      background: #fff;
+    }
+
+    .card strong { display: block; font-size: 28px; line-height: 1.2; }
+    .card span { color: var(--muted); font-size: 13px; }
+    .card.good { border-color: #a9ddcb; background: var(--green-soft); }
+    .card.info { border-color: #b9d1f8; background: var(--blue-soft); }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    .facts {
+      display: grid;
+      grid-template-columns: 180px 1fr;
+      gap: 9px 16px;
+      margin: 0;
+    }
+
+    .facts dt { color: var(--muted); }
+    .facts dd { margin: 0; font-weight: 620; overflow-wrap: anywhere; }
+
+    .chart-wrap { overflow-x: auto; }
+    svg { width: 100%; min-width: 680px; height: auto; display: block; }
+    .grid-line { stroke: #dfe6ee; stroke-width: 1; }
+    .axis-label { fill: #677587; font-size: 12px; }
+    .loss-line { fill: none; stroke: var(--blue); stroke-width: 3; stroke-linejoin: round; }
+    .loss-area { fill: url(#lossFill); opacity: .9; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+
+    th, td { padding: 11px 12px; border-bottom: 1px solid var(--line); text-align: left; }
+    th { color: var(--muted); font-size: 12px; letter-spacing: .03em; background: #f8fafc; }
+    td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    tr.overall td { font-weight: 750; background: var(--blue-soft); }
+    .positive { color: var(--green); font-weight: 750; }
+    .table-scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; }
+    .table-scroll table { min-width: 820px; }
+
+    .note {
+      margin-top: 18px;
+      padding: 15px 17px;
+      border-left: 4px solid var(--orange);
+      border-radius: 8px;
+      background: var(--orange-soft);
+      color: #69401e;
+    }
+
+    code {
+      padding: 2px 5px;
+      border-radius: 5px;
+      background: #edf1f5;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: .9em;
+      overflow-wrap: anywhere;
+    }
+
+    details { margin-top: 16px; }
+    summary { cursor: pointer; color: var(--blue); font-weight: 700; }
+    footer { margin-top: 18px; text-align: right; color: var(--muted); font-size: 12px; }
+
+    @media (max-width: 820px) {
+      .cards { grid-template-columns: 1fr 1fr; }
+      .grid-2 { grid-template-columns: 1fr; }
+      .facts { grid-template-columns: 1fr; gap: 2px; }
+      .facts dd { margin-bottom: 10px; }
+      header, section { padding: 22px; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div class="eyebrow">Execution report · 2026-08-14</div>
+      <h1>SmolVLA × LIBERO-Spatial<br>30 episodes / task</h1>
+      <p>LIBERO-Spatial の10タスクから各30エピソード、合計300エピソードを選択して LoRA 追加学習し、追加学習前後を同一条件の60ロールアウトで比較した実行結果です。</p>
+    </header>
+
+    <section>
+      <h2>結果サマリー</h2>
+      <div class="cards">
+        <div class="card"><h3>Baseline</h3><strong>70.0%</strong><span>21 / 30 success</span></div>
+        <div class="card good"><h3>30ep Spatial LoRA</h3><strong>86.7%</strong><span>26 / 30 success</span></div>
+        <div class="card good"><h3>改善幅</h3><strong>+16.7 pp</strong><span>悪化タスクなし</span></div>
+        <div class="card info"><h3>学習データ</h3><strong>300 ep</strong><span>10 tasks × 30 episodes</span></div>
+      </div>
+      <div class="note">評価は各タスク3エピソードのため、1回の成否がタスク成功率を33.3ポイント動かします。正式な比較では各タスク10エピソード以上で再評価してください。</div>
+    </section>
+
+    <section>
+      <h2>実行条件と実測時間</h2>
+      <div class="grid-2">
+        <dl class="facts">
+          <dt>GPU</dt><dd>NVIDIA A100 / BF16</dd>
+          <dt>ベースモデル</dt><dd><code>lerobot/smolvla_libero_plus</code></dd>
+          <dt>データセット</dt><dd><code>lerobot/libero_plus</code></dd>
+          <dt>学習データ</dt><dd>10 tasks × 30 episodes = 300 episodes</dd>
+          <dt>学習ステップ</dt><dd>3,000 steps / batch size 1</dd>
+          <dt>LoRA</dt><dd>r=16 / alpha=16</dd>
+          <dt>学習率</dt><dd>3e-4 → 3e-5 / warmup 100</dd>
+        </dl>
+        <dl class="facts">
+          <dt>学習本体</dt><dd>約12.1分</dd>
+          <dt>評価</dt><dd>約54.4分（60 rollouts）</dd>
+          <dt>評価seed</dt><dd>2026</dd>
+          <dt>評価数</dt><dd>2 models × 10 tasks × 3 episodes</dd>
+          <dt>最終loss</dt><dd>0.143</dd>
+          <dt>モデルZIP</dt><dd>0.85 GiB</dd>
+          <dt>実行状態</dt><dd>学習・マージ・評価・集計・ZIP作成すべて成功</dd>
+        </dl>
+      </div>
+    </section>
+
+    <section>
+      <h2>Loss 推移</h2>
+      <div class="chart-wrap">
+        <svg viewBox="0 0 840 285" role="img" aria-label="100ステップごとの学習loss">
+          <defs>
+            <linearGradient id="lossFill" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#67a1f4" stop-opacity=".55"/>
+              <stop offset="1" stop-color="#67a1f4" stop-opacity=".03"/>
+            </linearGradient>
+          </defs>
+          <line class="grid-line" x1="40" y1="60" x2="790" y2="60"/>
+          <line class="grid-line" x1="40" y1="111" x2="790" y2="111"/>
+          <line class="grid-line" x1="40" y1="163" x2="790" y2="163"/>
+          <line class="grid-line" x1="40" y1="214" x2="790" y2="214"/>
+          <text class="axis-label" x="4" y="64">0.17</text>
+          <text class="axis-label" x="4" y="115">0.15</text>
+          <text class="axis-label" x="4" y="167">0.13</text>
+          <text class="axis-label" x="4" y="218">0.11</text>
+          <path class="loss-area" d="M40 240 L40 196.3 L65.5 90.9 L91 144.9 L116.5 83.1 L142 162.9 L167.5 201.4 L193 152.6 L218.5 150 L244 162.9 L269.5 175.7 L295 121.7 L320.5 111.4 L346 124.3 L371.5 180.9 L397 150 L422.5 186 L448 111.4 L473.5 204 L499 78 L524.5 186 L550 165.4 L575.5 152.6 L601 224.6 L626.5 162.9 L652 219.4 L677.5 209.1 L703 173.1 L728.5 173.1 L754 216.9 L779.5 129.4 L779.5 240 Z"/>
+          <polyline class="loss-line" points="40.0,196.3 65.5,90.9 91.0,144.9 116.5,83.1 142.0,162.9 167.5,201.4 193.0,152.6 218.5,150.0 244.0,162.9 269.5,175.7 295.0,121.7 320.5,111.4 346.0,124.3 371.5,180.9 397.0,150.0 422.5,186.0 448.0,111.4 473.5,204.0 499.0,78.0 524.5,186.0 550.0,165.4 575.5,152.6 601.0,224.6 626.5,162.9 652.0,219.4 677.5,209.1 703.0,173.1 728.5,173.1 754.0,216.9 779.5,129.4"/>
+          <text class="axis-label" x="35" y="267">100</text>
+          <text class="axis-label" x="278" y="267">1,000</text>
+          <text class="axis-label" x="528" y="267">2,000</text>
+          <text class="axis-label" x="760" y="267">3,000 step</text>
+        </svg>
+      </div>
+      <p>100ステップごとのlossは 0.106〜0.163 の範囲で推移しました。終了時に発散や NaN はなく、3,000ステップを正常完了しています。</p>
+    </section>
+
+    <section>
+      <h2>タスク別の成功率</h2>
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th>ID</th><th>Task</th><th class="num">Base</th><th class="num">30ep LoRA</th><th class="num">Δ</th></tr></thead>
+          <tbody>
+            <tr><td>0</td><td>from table center → plate</td><td class="num">100.0%</td><td class="num">100.0%</td><td class="num">0.0</td></tr>
+            <tr><td>1</td><td>next to cookie box → plate</td><td class="num">66.7%</td><td class="num">100.0%</td><td class="num positive">+33.3</td></tr>
+            <tr><td>2</td><td>next to plate → plate</td><td class="num">33.3%</td><td class="num">33.3%</td><td class="num">0.0</td></tr>
+            <tr><td>3</td><td>next to ramekin → plate</td><td class="num">33.3%</td><td class="num">66.7%</td><td class="num positive">+33.3</td></tr>
+            <tr><td>4</td><td>on cookie box → plate</td><td class="num">33.3%</td><td class="num">66.7%</td><td class="num positive">+33.3</td></tr>
+            <tr><td>5</td><td>on ramekin → plate</td><td class="num">33.3%</td><td class="num">100.0%</td><td class="num positive">+66.7</td></tr>
+            <tr><td>6</td><td>on stove → plate</td><td class="num">100.0%</td><td class="num">100.0%</td><td class="num">0.0</td></tr>
+            <tr><td>7</td><td>on wooden cabinet → plate</td><td class="num">100.0%</td><td class="num">100.0%</td><td class="num">0.0</td></tr>
+            <tr><td>8</td><td>top drawer of wooden cabinet → plate</td><td class="num">100.0%</td><td class="num">100.0%</td><td class="num">0.0</td></tr>
+            <tr><td>9</td><td>between plate and ramekin → plate</td><td class="num">100.0%</td><td class="num">100.0%</td><td class="num">0.0</td></tr>
+            <tr class="overall"><td>—</td><td>LIBERO-Spatial Overall</td><td class="num">70.0%</td><td class="num">86.7%</td><td class="num positive">+16.7</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>10タスク中4タスクで改善、6タスクで同率、悪化は0タスクでした。最大改善は task 5 の +66.7ポイントです。</p>
+    </section>
+
+    <section>
+      <h2>前回5ep保存済み出力との関係</h2>
+      <div class="cards">
+        <div class="card"><h3>保存済み 5ep LoRA</h3><strong>83.3%</strong><span>Base 76.7% / +6.7 pp</span></div>
+        <div class="card good"><h3>今回 30ep LoRA</h3><strong>86.7%</strong><span>Base 70.0% / +16.7 pp</span></div>
+      </div>
+      <div class="note">LoRA成功率だけを見ると +3.4ポイントですが、今回と前回でベースライン成功率も 6.7ポイント変動しています。各タスク3エピソードという小標本とGPU・シミュレーションの非決定性があるため、30ep化の純粋な効果として断定できません。</div>
+    </section>
+
+    <section>
+      <h2>成果物</h2>
+      <dl class="facts">
+        <dt>マージ済みモデル</dt><dd><code>/content/smolvla_libero_plus_spatial_lora_30ep_merged</code></dd>
+        <dt>モデルZIP</dt><dd><code>/content/smolvla_libero_plus_spatial_lora_30ep_merged.zip</code>（0.85 GiB）</dd>
+        <dt>比較CSV</dt><dd><code>/content/libero_spatial_comparison_30ep.csv</code></dd>
+        <dt>ベースライン評価</dt><dd><code>/content/eval/30ep/base/eval_info.json</code></dd>
+        <dt>30epモデル評価</dt><dd><code>/content/eval/30ep/spatial_lora/eval_info.json</code></dd>
+      </dl>
+      <p>上記 <code>/content</code> 配下は Colab の一時ストレージです。ランタイム切断前に必要な成果物を永続ストレージへ移してください。</p>
+    </section>
+
+    <footer>Generated from the Google Colab execution completed on 2026-08-14 (JST).</footer>
+  </main>
+</body>
+</html>
