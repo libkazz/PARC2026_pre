@@ -54,7 +54,23 @@ def test_mac_notebook_uses_mps_and_local_artifact_paths():
     assert "torch.backends.mps.is_available()" in source
     assert 'DEVICE = "mps"' in source
     assert 'f"--policy.device={DEVICE}"' in source
+    assert '"lerobot.scripts.lerobot_train"' in source
+    assert '"lerobot.scripts.lerobot_eval"' in source
+    assert 'RUN_DIR / "training.log"' in source
+    assert 'RUN_DIR / f"evaluation_{log_name}"' in source
+    assert 'os.environ["HF_HUB_DISABLE_XET"] = "1"' in source
+    assert 'os.environ.get("PARC2026_RUN_DIR")' in source
     assert 'eval_env["MUJOCO_GL"] = "glfw"' in source
+    assert 'os.environ["MAGICK_HOME"] = homebrew_prefix' in source
+    assert 'os.environ["DYLD_FALLBACK_LIBRARY_PATH"]' in source
+    assert '"future": "1.0.0"' in source
+    assert '"--no-deps"' in source
+    assert "dependency_specs" in source
+    assert "PARC2026_STANDARD_SPATIAL_TASKS" in source
+    assert "standard_asset_prefixes" in source
+    assert "asset_manifest_path" in source
+    assert "Lifelong-Robot-Learning/LIBERO/git/trees/" in source
+    assert 'repo_id="Sylvest/LIBERO-plus"' not in source
     assert 'Path.home() / "PARC2026_outputs"' in source
 
 
