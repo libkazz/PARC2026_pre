@@ -1,6 +1,8 @@
 __pycache__/
 *.pyc
 results/
+!docs/results/
+!docs/results/*.html
 venv/
 .venv-smolvla/
 LIBERO-plus/
