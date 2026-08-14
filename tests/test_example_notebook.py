@@ -108,7 +108,10 @@ def test_notebook_configures_trajectory_selection_for_200_episodes():
     source = "\n".join(_code_cells())
 
     assert "TRAIN_EPISODES_PER_TASK = 20" in source
-    assert "GRIPPER_QUALITY_TASK_IDS = {3, 6, 7}" in source
+    assert (
+        "GRIPPER_QUALITY_TASK_IDS = "
+        "set(range(len(SPATIAL_TASK_NAMES)))"
+    ) in source
     assert "download_videos=False" in source
     assert '"action_state_trajectory_fingerprint"' in source
     assert 'WORK_DIR / "training_episode_selection.json"' in source
