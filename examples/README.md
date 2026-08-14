@@ -2,7 +2,7 @@
 
 | ファイル | 内容 |
 |---|---|
-| [smolvla_libero_spatial_lora.ipynb](smolvla_libero_spatial_lora.ipynb) | SmolVLA を LIBERO-plus Spatial で LoRA 追加学習する Google Colab ノートブック |
+| [smolvla_libero_spatial_lora.ipynb](smolvla_libero_spatial_lora.ipynb) | SmolVLA を LIBERO-plus Spatial で LoRA 追加学習する Google Colab／ローカル Jupyter 対応ノートブック |
 
 ## smolvla_libero_spatial_lora.ipynb
 
@@ -12,12 +12,45 @@ LoRA で追加学習する。学習後は LoRA を元の重みへマージし、
 
 ### 使い方
 
-1. Google Colab で開き、ランタイムのタイプを GPU（T4 で足りる）に変更する
+Google Colab では次の手順で実行する。
+
+1. ノートブックを開き、ランタイムのタイプを GPU（T4 で足りる）に変更する
 2. 上から順に実行する。所要時間は T4 で数時間程度である
-3. マージ済みモデル一式（zip）と、追加学習前後の成功率の比較（CSV）が出力される
+3. マージ済みモデル一式（zip）と、追加学習前後の成功率の比較（CSV）が自動でダウンロードされる
+
+ローカルでは Python 3.12 以上と `git`、`ffmpeg`、`unzip` が必要である。
+Linux では MuJoCo 用の共有ライブラリも導入する。
+
+```bash
+# Ubuntu / Debian
+sudo apt-get install ffmpeg git unzip libgl1 libglib2.0-0 libsm6 libxext6 \
+  libexpat1 libfontconfig1-dev libmagickwand-dev
+
+# macOS
+brew install ffmpeg imagemagick
+```
+
+リポジトリの評価環境（Python 3.10）とは分けて、ノートブック専用の仮想環境を作る。
+PyTorch は使用する CUDA または Apple Silicon MPS に合うものを導入する。
+
+```bash
+python3.12 -m venv .venv-smolvla
+source .venv-smolvla/bin/activate
+python -m pip install --upgrade pip jupyterlab torch
+jupyter lab examples/smolvla_libero_spatial_lora.ipynb
+```
+
+ノートブックは Colab／ローカルを自動判定する。ローカルのダウンロード、キャッシュ、
+学習結果は既定で `~/.cache/parc2026_smolvla` に保存される。保存先を変更する場合は
+Jupyter の起動前に `PARC2026_SMOLVLA_WORKDIR` を設定する。
+
+CUDA と Apple Silicon MPS を自動選択し、どちらもない場合は CPU を使用する。
+CPU でもセルは実行できるが、学習と評価には非常に長い時間がかかる。
+ローカルに既存の `~/.libero/config.yaml` がある場合は、初回実行時に
+`~/.libero/config.yaml.bak` へ退避してから Notebook 用の設定へ更新する。
 
 学習条件は 10 タスク × 各 5 エピソード（計 50 エピソード）、3,000 steps、
-バッチサイズ 1 で、Colab で完走することを優先した最小構成である。
+バッチサイズ 1 で、Colab の T4 やローカル GPU で完走することを優先した最小構成である。
 性能を伸ばす場合はここを出発点に、自身の環境で条件を組み直すとよい。
 
 ### 提出物にするまでの作業
@@ -48,7 +81,7 @@ LoRA で追加学習する。学習後は LoRA を元の重みへマージし、
 
 ### 実行環境
 
-ノートブックの環境構築は Colab 向けで、[setup.sh](../setup.sh) とは独立している。
+ノートブックの環境構築は Colab／ローカル Jupyter 向けで、[setup.sh](../setup.sh) とは独立している。
 依存パッケージのバージョンが一致しない箇所があるため、評価と提出前チェックは
 リポジトリ側の環境（`setup.sh` + `env.sh`）で行うこと。
 
