@@ -1,0 +1,707 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>SmolVLA Macローカル学習・推論 実測結果</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f4f7fb;
+      --surface: #ffffff;
+      --surface-soft: #eef3f9;
+      --ink: #172338;
+      --muted: #5d6b7e;
+      --line: #dce4ef;
+      --base: #65758b;
+      --lora: #137c70;
+      --lora-soft: #dff4ef;
+      --positive: #08775f;
+      --negative: #b5473b;
+      --accent: #2356a8;
+      --warning-bg: #fff8e6;
+      --warning-line: #e2ba59;
+      --shadow: 0 14px 40px rgb(34 54 82 / 8%);
+    }
+
+    * { box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic UI", "Yu Gothic", sans-serif;
+      line-height: 1.75;
+      letter-spacing: .01em;
+    }
+
+    a { color: var(--accent); }
+
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: .9em;
+      overflow-wrap: anywhere;
+    }
+
+    .page {
+      width: min(1120px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 40px 0 72px;
+    }
+
+    .hero {
+      position: relative;
+      overflow: hidden;
+      padding: clamp(28px, 6vw, 64px);
+      border-radius: 28px;
+      background: #152842;
+      color: #f8fbff;
+      box-shadow: var(--shadow);
+    }
+
+    .hero::after {
+      content: "";
+      position: absolute;
+      right: -80px;
+      top: -110px;
+      width: 360px;
+      height: 360px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgb(56 202 178 / 30%), transparent 68%);
+      pointer-events: none;
+    }
+
+    .eyebrow {
+      margin: 0 0 10px;
+      color: #81d9cb;
+      font-size: .78rem;
+      font-weight: 700;
+      letter-spacing: .15em;
+      text-transform: uppercase;
+    }
+
+    h1, h2, h3 { line-height: 1.35; }
+
+    h1 {
+      position: relative;
+      z-index: 1;
+      max-width: 800px;
+      margin: 0;
+      font-size: clamp(2rem, 5vw, 3.6rem);
+      letter-spacing: -.035em;
+    }
+
+    .lead {
+      position: relative;
+      z-index: 1;
+      max-width: 760px;
+      margin: 20px 0 0;
+      color: #cad6e6;
+      font-size: clamp(1rem, 2vw, 1.15rem);
+    }
+
+    .meta {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px 24px;
+      margin-top: 28px;
+      color: #9fb0c7;
+      font-size: .85rem;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 16px;
+      margin: 24px 0 54px;
+    }
+
+    .metric {
+      min-height: 150px;
+      padding: 22px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+
+    .metric-label {
+      display: block;
+      color: var(--muted);
+      font-size: .82rem;
+      font-weight: 700;
+    }
+
+    .metric-value {
+      display: block;
+      margin-top: 10px;
+      font-size: clamp(1.7rem, 4vw, 2.45rem);
+      font-weight: 800;
+      line-height: 1.15;
+      letter-spacing: -.03em;
+    }
+
+    .metric-note {
+      display: block;
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: .8rem;
+    }
+
+    .metric.accent .metric-value { color: var(--lora); }
+
+    section {
+      margin-top: 56px;
+      scroll-margin-top: 16px;
+    }
+
+    .section-heading {
+      display: grid;
+      grid-template-columns: 48px 1fr;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 22px;
+    }
+
+    .section-number {
+      display: grid;
+      width: 48px;
+      height: 48px;
+      place-items: center;
+      border-radius: 14px;
+      background: #152842;
+      color: #ffffff;
+      font-weight: 800;
+    }
+
+    h2 {
+      margin: 0;
+      font-size: clamp(1.5rem, 3vw, 2rem);
+      letter-spacing: -.02em;
+    }
+
+    h3 { margin: 0 0 10px; font-size: 1.05rem; }
+
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .step,
+    .panel {
+      padding: 24px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: var(--surface);
+    }
+
+    .step p,
+    .panel p { margin: 0; color: var(--muted); }
+
+    .tag {
+      display: inline-block;
+      margin-bottom: 12px;
+      padding: 3px 9px;
+      border-radius: 999px;
+      background: var(--surface-soft);
+      color: var(--accent);
+      font-size: .72rem;
+      font-weight: 800;
+      letter-spacing: .06em;
+    }
+
+    .settings {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 1px;
+      margin-top: 18px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: var(--line);
+    }
+
+    .setting { padding: 15px; background: var(--surface-soft); }
+    .setting dt { color: var(--muted); font-size: .72rem; }
+    .setting dd { margin: 3px 0 0; font-weight: 800; }
+
+    .chart-panel {
+      padding: clamp(20px, 4vw, 34px);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+
+    .chart-title { margin-bottom: 5px; }
+    .chart-caption { margin: 0 0 24px; color: var(--muted); font-size: .88rem; }
+
+    .overall-bars { display: grid; gap: 18px; }
+
+    .bar-row {
+      display: grid;
+      grid-template-columns: 110px 1fr 72px;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .bar-label { font-weight: 700; }
+    .bar-track { height: 18px; border-radius: 999px; background: var(--surface-soft); overflow: hidden; }
+    .bar-fill { height: 100%; border-radius: inherit; }
+    .bar-fill.base { width: 80%; background: var(--base); }
+    .bar-fill.lora { width: 83.333%; background: var(--lora); }
+    .bar-number { text-align: right; font-weight: 800; font-variant-numeric: tabular-nums; }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 20px;
+      margin-top: 20px;
+      color: var(--muted);
+      font-size: .82rem;
+    }
+
+    .legend span { display: inline-flex; align-items: center; gap: 7px; }
+    .legend i { width: 13px; height: 13px; border-radius: 4px; }
+    .legend .base { background: var(--base); }
+    .legend .lora { background: var(--lora); }
+
+    .result-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.2fr) minmax(280px, .8fr);
+      gap: 18px;
+      margin-top: 18px;
+    }
+
+    .mini-table { width: 100%; border-collapse: collapse; }
+    .mini-table th, .mini-table td { padding: 10px 8px; border-bottom: 1px solid var(--line); }
+    .mini-table th { color: var(--muted); font-size: .76rem; text-align: left; }
+    .mini-table td:last-child, .mini-table th:last-child { text-align: right; }
+    .mini-table tr:last-child td { border-bottom: 0; }
+
+    .delta-figure { margin: 34px 0 12px; overflow-x: auto; }
+    .delta-figure svg { display: block; width: 100%; min-width: 760px; height: auto; }
+
+    .data-table-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: var(--surface);
+    }
+
+    .data-table {
+      width: 100%;
+      min-width: 860px;
+      border-collapse: collapse;
+      font-size: .86rem;
+    }
+
+    .data-table th,
+    .data-table td { padding: 13px 14px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+    .data-table th { position: sticky; top: 0; background: var(--surface-soft); color: var(--muted); text-align: left; font-size: .75rem; }
+    .data-table td.num, .data-table th.num { text-align: right; font-variant-numeric: tabular-nums; }
+    .data-table tr:last-child td { border-bottom: 0; }
+    .task-name { min-width: 390px; }
+    .delta.positive { color: var(--positive); font-weight: 800; }
+    .delta.negative { color: var(--negative); font-weight: 800; }
+    .delta.neutral { color: var(--muted); }
+
+    .outcomes { display: inline-flex; gap: 4px; vertical-align: middle; }
+    .outcome { width: 10px; height: 10px; border-radius: 50%; background: var(--line); }
+    .outcome.success.base { background: var(--base); }
+    .outcome.success.lora { background: var(--lora); }
+
+    .callout {
+      margin-top: 20px;
+      padding: 18px 20px;
+      border-left: 4px solid var(--warning-line);
+      border-radius: 4px 12px 12px 4px;
+      background: var(--warning-bg);
+    }
+
+    .callout strong { display: block; margin-bottom: 4px; }
+    .callout p { margin: 0; color: #654f1e; }
+
+    .analysis-grid,
+    .improvement-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .analysis-grid .panel:first-child { border-top: 4px solid var(--lora); }
+    .analysis-grid .panel:nth-child(2) { border-top: 4px solid var(--base); }
+
+    .panel ul,
+    .panel ol { margin: 10px 0 0; padding-left: 1.3em; }
+    .panel li + li { margin-top: 8px; }
+
+    .priority {
+      display: inline-grid;
+      min-width: 28px;
+      height: 28px;
+      margin-right: 8px;
+      place-items: center;
+      border-radius: 8px;
+      background: var(--lora-soft);
+      color: var(--positive);
+      font-size: .75rem;
+      font-weight: 800;
+    }
+
+    .provenance {
+      margin-top: 54px;
+      padding-top: 24px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: .82rem;
+    }
+
+    .provenance ul { padding-left: 1.2em; }
+    .provenance li + li { margin-top: 5px; }
+
+    .facts-note { font-size: .82rem; color: var(--muted); }
+
+    @media (max-width: 860px) {
+      .summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .settings { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .result-grid { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 620px) {
+      .page { width: min(100% - 20px, 1120px); padding-top: 10px; }
+      .hero { border-radius: 20px; }
+      .summary-grid, .steps, .analysis-grid, .improvement-grid { grid-template-columns: 1fr; }
+      .bar-row { grid-template-columns: 82px 1fr 60px; gap: 8px; }
+      .metric { min-height: auto; }
+      .section-heading { grid-template-columns: 40px 1fr; }
+      .section-number { width: 40px; height: 40px; }
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        color-scheme: dark;
+        --bg: #0f1723;
+        --surface: #172231;
+        --surface-soft: #202d3d;
+        --ink: #edf4fb;
+        --muted: #acb9c9;
+        --line: #334358;
+        --base: #91a0b5;
+        --lora: #48b8a6;
+        --lora-soft: #153f39;
+        --positive: #68d2b9;
+        --negative: #ff9186;
+        --accent: #8bb8ff;
+        --warning-bg: #332b18;
+        --warning-line: #d0a94d;
+        --shadow: none;
+      }
+      .hero { background: #101d30; }
+      .section-number { background: #2b4e79; }
+      .callout p { color: #ead7a2; }
+    }
+
+    @media print {
+      :root { --bg: #fff; --surface: #fff; --ink: #111; --muted: #444; --line: #bbb; --shadow: none; }
+      body { background: #fff; }
+      .page { width: 100%; padding: 0; }
+      .hero { color: #fff; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+      section { break-inside: avoid; }
+      .data-table-wrap { overflow: visible; }
+      .data-table { min-width: 0; font-size: 8pt; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="hero">
+      <p class="eyebrow">Measured results · 2026-08-14</p>
+      <h1>SmolVLA Macローカル<br>学習・推論 実測結果</h1>
+      <p class="lead">
+        Colabに依存せず、Apple Silicon MacのMPS上でLoRA学習からモデル統合、
+        実データ推論、LIBERO Spatial評価までを一貫して実行した結果をまとめる。
+      </p>
+      <div class="meta">
+        <span>対象: SmolVLA / LIBERO-plus</span>
+        <span>実行デバイス: MPS</span>
+        <span>評価: 10 tasks × 3 episodes</span>
+      </div>
+    </header>
+
+    <div class="summary-grid" aria-label="主要結果">
+      <article class="metric">
+        <span class="metric-label">LoRA学習</span>
+        <strong class="metric-value">3,000 steps</strong>
+        <span class="metric-note">最終checkpoint作成・モデル統合完了</span>
+      </article>
+      <article class="metric">
+        <span class="metric-label">Base 成功率</span>
+        <strong class="metric-value">80.0%</strong>
+        <span class="metric-note">24 / 30 episodes</span>
+      </article>
+      <article class="metric accent">
+        <span class="metric-label">Spatial LoRA 成功率</span>
+        <strong class="metric-value">83.3%</strong>
+        <span class="metric-note">25 / 30 episodes</span>
+      </article>
+      <article class="metric accent">
+        <span class="metric-label">成功率差</span>
+        <strong class="metric-value">+3.3 pp</strong>
+        <span class="metric-note">成功数では +1 episode</span>
+      </article>
+    </div>
+
+    <section id="work">
+      <div class="section-heading">
+        <span class="section-number">01</span>
+        <h2>実施した内容</h2>
+      </div>
+
+      <div class="steps">
+        <article class="step">
+          <span class="tag">SETUP</span>
+          <h3>Mac向けローカル実行環境</h3>
+          <p>Apple SiliconのMPSを計算デバイスとして利用し、Notebookから依存関係・データ・モデルを準備。Colab固有のパスやランタイムを使わない構成とした。</p>
+        </article>
+        <article class="step">
+          <span class="tag">TRAIN</span>
+          <h3>SpatialタスクへのLoRA学習</h3>
+          <p>LIBERO Spatialの標準10タスクから各5エピソード、合計50エピソードを選び、SmolVLAに3,000ステップのLoRA学習を実施した。</p>
+        </article>
+        <article class="step">
+          <span class="tag">MERGE &amp; INFERENCE</span>
+          <h3>モデル統合と実データ推論</h3>
+          <p>最終LoRA adapterをベースモデルへ安全に統合し、画像2系統とロボット状態を含む実データ観測から7次元actionをMPSで生成した。</p>
+        </article>
+        <article class="step">
+          <span class="tag">EVALUATION</span>
+          <h3>同条件での比較評価</h3>
+          <p>BaseとSpatial LoRAを、同じ10タスク・各3エピソード・seed 2026で評価。成功率、タスク別成否、評価時間を比較した。</p>
+        </article>
+      </div>
+
+      <dl class="settings" aria-label="学習・評価設定">
+        <div class="setting"><dt>学習データ</dt><dd>50 episodes</dd></div>
+        <div class="setting"><dt>Batch size</dt><dd>1</dd></div>
+        <div class="setting"><dt>Learning rate</dt><dd>3e-4 → 3e-5</dd></div>
+        <div class="setting"><dt>Warmup</dt><dd>100 steps</dd></div>
+        <div class="setting"><dt>LoRA rank</dt><dd>16</dd></div>
+        <div class="setting"><dt>LoRA alpha</dt><dd>16</dd></div>
+        <div class="setting"><dt>Training seed</dt><dd>42</dd></div>
+        <div class="setting"><dt>Evaluation seed</dt><dd>2026</dd></div>
+      </dl>
+    </section>
+
+    <section id="results">
+      <div class="section-heading">
+        <span class="section-number">02</span>
+        <h2>実測結果</h2>
+      </div>
+
+      <div class="chart-panel">
+        <h3 class="chart-title">LIBERO Spatial 全体成功率</h3>
+        <p class="chart-caption">標準10タスク × 各3エピソード。バーの分母は各モデル30エピソード。</p>
+        <div class="overall-bars" role="img" aria-label="Base成功率80.0%、Spatial LoRA成功率83.3%">
+          <div class="bar-row">
+            <span class="bar-label">Base</span>
+            <div class="bar-track"><div class="bar-fill base"></div></div>
+            <span class="bar-number">80.0%</span>
+          </div>
+          <div class="bar-row">
+            <span class="bar-label">Spatial LoRA</span>
+            <div class="bar-track"><div class="bar-fill lora"></div></div>
+            <span class="bar-number">83.3%</span>
+          </div>
+        </div>
+        <div class="legend" aria-hidden="true">
+          <span><i class="base"></i>Base: 24成功 / 6失敗</span>
+          <span><i class="lora"></i>Spatial LoRA: 25成功 / 5失敗</span>
+        </div>
+      </div>
+
+      <div class="result-grid">
+        <article class="panel">
+          <h3>評価時間</h3>
+          <table class="mini-table">
+            <thead><tr><th>モデル</th><th>全体</th><th>1 episode</th></tr></thead>
+            <tbody>
+              <tr><td>Base</td><td>411.904秒</td><td>13.730秒</td></tr>
+              <tr><td>Spatial LoRA</td><td>397.123秒</td><td>13.237秒</td></tr>
+              <tr><td>差</td><td>−14.782秒</td><td>−0.493秒</td></tr>
+            </tbody>
+          </table>
+        </article>
+        <article class="panel">
+          <h3>実データMPS推論</h3>
+          <table class="mini-table">
+            <tbody>
+              <tr><th>モデル読込</th><td>17.374秒</td></tr>
+              <tr><th>推論</th><td>6.803秒</td></tr>
+              <tr><th>出力shape</th><td>[1, 7]</td></tr>
+              <tr><th>デバイス</th><td>MPS</td></tr>
+            </tbody>
+          </table>
+          <p class="facts-note">推論時間は1観測に対する単回計測であり、定常レイテンシの統計ではない。</p>
+        </article>
+      </div>
+
+      <figure class="delta-figure">
+        <figcaption>
+          <h3>タスク別 成功率差（Spatial LoRA − Base）</h3>
+          <p class="chart-caption">単位: percentage points。各タスクは3試行のため、1試行の差が33.3 ppに相当する。</p>
+        </figcaption>
+        <svg viewBox="0 0 1040 520" role="img" aria-labelledby="delta-title delta-desc">
+          <title id="delta-title">タスク別の成功率差</title>
+          <desc id="delta-desc">タスク8で66.7ポイント改善、タスク0と5で33.3ポイント改善。タスク3、6、7では33.3ポイント低下。その他は同率。</desc>
+          <rect x="365" y="28" width="600" height="442" rx="10" fill="none" stroke="var(--line)"/>
+          <line x1="365" y1="28" x2="365" y2="470" stroke="var(--line)"/>
+          <line x1="565" y1="28" x2="565" y2="470" stroke="var(--ink)" stroke-width="2"/>
+          <line x1="765" y1="28" x2="765" y2="470" stroke="var(--line)"/>
+          <line x1="965" y1="28" x2="965" y2="470" stroke="var(--line)"/>
+          <g fill="var(--muted)" font-size="13" text-anchor="middle">
+            <text x="365" y="495">−33.3</text><text x="565" y="495">0</text>
+            <text x="765" y="495">+33.3</text><text x="965" y="495">+66.7</text>
+          </g>
+          <text x="665" y="517" fill="var(--muted)" font-size="13" text-anchor="middle">成功率差（pp）</text>
+          <g fill="var(--ink)" font-size="14">
+            <text x="350" y="59" text-anchor="end">0 · table center</text>
+            <text x="350" y="101" text-anchor="end">1 · next to cookie box</text>
+            <text x="350" y="143" text-anchor="end">2 · next to plate</text>
+            <text x="350" y="185" text-anchor="end">3 · next to ramekin</text>
+            <text x="350" y="227" text-anchor="end">4 · on cookie box</text>
+            <text x="350" y="269" text-anchor="end">5 · on ramekin</text>
+            <text x="350" y="311" text-anchor="end">6 · on stove</text>
+            <text x="350" y="353" text-anchor="end">7 · on wooden cabinet</text>
+            <text x="350" y="395" text-anchor="end">8 · in top drawer</text>
+            <text x="350" y="437" text-anchor="end">9 · between plate &amp; ramekin</text>
+          </g>
+          <g>
+            <rect x="565" y="42" width="200" height="24" rx="4" fill="var(--positive)"/><text x="775" y="59" fill="var(--positive)" font-size="13">+33.3</text>
+            <circle cx="565" cy="96" r="5" fill="var(--muted)"/>
+            <circle cx="565" cy="138" r="5" fill="var(--muted)"/>
+            <rect x="365" y="168" width="200" height="24" rx="4" fill="var(--negative)"/><text x="355" y="185" fill="var(--negative)" font-size="13" text-anchor="end">−33.3</text>
+            <circle cx="565" cy="222" r="5" fill="var(--muted)"/>
+            <rect x="565" y="252" width="200" height="24" rx="4" fill="var(--positive)"/><text x="775" y="269" fill="var(--positive)" font-size="13">+33.3</text>
+            <rect x="365" y="294" width="200" height="24" rx="4" fill="var(--negative)"/><text x="355" y="311" fill="var(--negative)" font-size="13" text-anchor="end">−33.3</text>
+            <rect x="365" y="336" width="200" height="24" rx="4" fill="var(--negative)"/><text x="355" y="353" fill="var(--negative)" font-size="13" text-anchor="end">−33.3</text>
+            <rect x="565" y="378" width="400" height="24" rx="4" fill="var(--positive)"/>
+            <text x="975" y="395" fill="var(--positive)" font-size="13">+66.7</text>
+            <circle cx="565" cy="432" r="5" fill="var(--muted)"/>
+          </g>
+        </svg>
+      </figure>
+
+      <div class="data-table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th class="task-name">タスク（黒いボウルを皿へ移動）</th>
+              <th class="num">Base</th>
+              <th class="num">Spatial LoRA</th>
+              <th class="num">差</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>0</td><td>テーブル中央から</td><td class="num">2/3&nbsp; <span class="outcomes" aria-label="成功、失敗、成功"><i class="outcome success base"></i><i class="outcome"></i><i class="outcome success base"></i></span></td><td class="num">3/3&nbsp; <span class="outcomes" aria-label="3回成功"><i class="outcome success lora"></i><i class="outcome success lora"></i><i class="outcome success lora"></i></span></td><td class="num delta positive">+33.3 pp</td></tr>
+            <tr><td>1</td><td>クッキーボックスの隣から</td><td class="num">3/3</td><td class="num">3/3</td><td class="num delta neutral">0.0 pp</td></tr>
+            <tr><td>2</td><td>皿の隣から</td><td class="num">2/3</td><td class="num">2/3</td><td class="num delta neutral">0.0 pp</td></tr>
+            <tr><td>3</td><td>ラメキンの隣から</td><td class="num">3/3</td><td class="num">2/3</td><td class="num delta negative">−33.3 pp</td></tr>
+            <tr><td>4</td><td>クッキーボックスの上から</td><td class="num">3/3</td><td class="num">3/3</td><td class="num delta neutral">0.0 pp</td></tr>
+            <tr><td>5</td><td>ラメキンの上から</td><td class="num">1/3</td><td class="num">2/3</td><td class="num delta positive">+33.3 pp</td></tr>
+            <tr><td>6</td><td>ストーブの上から</td><td class="num">3/3</td><td class="num">2/3</td><td class="num delta negative">−33.3 pp</td></tr>
+            <tr><td>7</td><td>木製キャビネットの上から</td><td class="num">3/3</td><td class="num">2/3</td><td class="num delta negative">−33.3 pp</td></tr>
+            <tr><td>8</td><td>木製キャビネットの上段引き出しから</td><td class="num">1/3</td><td class="num">3/3</td><td class="num delta positive">+66.7 pp</td></tr>
+            <tr><td>9</td><td>皿とラメキンの間から</td><td class="num">3/3</td><td class="num">3/3</td><td class="num delta neutral">0.0 pp</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <aside class="callout">
+        <strong>標本数に関する注意</strong>
+        <p>各タスクは3エピソードのみで、1回の成否が33.3 ppを動かす。全体差+3.3 ppは1成功分であり、この評価だけでは改善の再現性や統計的有意性を結論づけられない。</p>
+      </aside>
+    </section>
+
+    <section id="discussion">
+      <div class="section-heading">
+        <span class="section-number">03</span>
+        <h2>考察</h2>
+      </div>
+      <div class="analysis-grid">
+        <article class="panel">
+          <h3>観測されたこと（事実）</h3>
+          <ul>
+            <li>MacローカルのMPSで3,000ステップを完走し、最終checkpointと統合済みモデルを生成できた。</li>
+            <li>実データ観測から7次元actionを生成し、学習後モデルのMPS推論が成立した。</li>
+            <li>全体成功数はBaseの24回からLoRAの25回へ1回増加した。</li>
+            <li>タスク8は1/3から3/3へ改善し、タスク3・6・7は各1成功減少した。</li>
+            <li>LoRAモデルの評価はBaseより全体で14.782秒、1エピソード平均で0.493秒短かった。</li>
+          </ul>
+        </article>
+        <article class="panel">
+          <h3>結果から考えられること（解釈）</h3>
+          <ul>
+            <li>少量データ・短時間のLoRAでも、Spatialタスク全体の性能を維持しながら特定配置へ適応できる可能性がある。</li>
+            <li>タスク8の大幅改善は、引き出し内という空間関係の学習効果を示す候補だが、3試行では偶然変動と分離できない。</li>
+            <li>改善と悪化がタスクごとに混在しており、全体平均だけでは負の転移を見落とす。配置タイプ別の確認が重要である。</li>
+            <li>評価時間差は約3.6%だが、モデル構造上の高速化と断定できない。ウォームアップ、OS負荷、実行順などの影響を受けうる。</li>
+          </ul>
+        </article>
+      </div>
+    </section>
+
+    <section id="improvements">
+      <div class="section-heading">
+        <span class="section-number">04</span>
+        <h2>改善点</h2>
+      </div>
+      <div class="improvement-grid">
+        <article class="panel">
+          <h3><span class="priority">P1</span>評価試行数を増やす</h3>
+          <p>各タスクを最低30エピソード程度へ増やし、複数seedで再評価する。成功率の信頼区間と対応のある差分を算出し、+1成功の偶然性を検証する。</p>
+        </article>
+        <article class="panel">
+          <h3><span class="priority">P1</span>悪化タスクを重点分析する</h3>
+          <p>タスク3・6・7の失敗動画と状態遷移を保存し、把持失敗、到達失敗、配置失敗を分類する。負の転移に応じてデータ配分を調整する。</p>
+        </article>
+        <article class="panel">
+          <h3><span class="priority">P2</span>学習条件を比較する</h3>
+          <p>LoRA rank、学習率、ステップ数、タスク別サンプリングを小規模に比較する。特に各タスク5エピソードという偏りや不足を確認する。</p>
+        </article>
+        <article class="panel">
+          <h3><span class="priority">P2</span>性能計測を安定化する</h3>
+          <p>モデル読込と推論を分離し、ウォームアップ後の複数回測定で中央値と分位点を記録する。実行順を入れ替え、Macの温度・メモリ条件も揃える。</p>
+        </article>
+        <article class="panel">
+          <h3><span class="priority">P3</span>再現性情報を自動保存する</h3>
+          <p>Mac機種、メモリ、macOS、Python/PyTorch、依存commit、データ・モデルrevisionを結果JSONへ自動記録し、環境差を追跡可能にする。</p>
+        </article>
+        <article class="panel">
+          <h3><span class="priority">P3</span>アセット取得を堅牢化する</h3>
+          <p>必要アセットの最小取得、キャッシュ再利用、空き容量の事前確認を整備する。大容量取得やDocker再ビルドが途中停止しても評価を再開できるようにする。</p>
+        </article>
+      </div>
+    </section>
+
+    <footer class="provenance">
+      <strong>根拠データと再現手順</strong>
+      <ul>
+        <li>実行Notebook: <a href="../../examples/smolvla_libero_spatial_lora_mac.ipynb"><code>examples/smolvla_libero_spatial_lora_mac.ipynb</code></a></li>
+        <li>比較結果: <code>/Users/takemo/PARC2026_outputs/20260814_121853/libero_spatial_comparison.csv</code></li>
+        <li>推論結果: <code>/Users/takemo/PARC2026_outputs/20260814_121853/offline_inference.json</code></li>
+        <li>評価詳細: <code>/Users/takemo/PARC2026_outputs/20260814_121853/eval/{base,spatial_lora}/eval_info.json</code></li>
+        <li>学習到達点: <code>/Users/takemo/PARC2026_outputs/20260814_121853/training/checkpoints/003000</code></li>
+      </ul>
+      <p>本レポートでは「実測ファイルから確認できる事実」と「結果に対する解釈」を分けて記載した。数値は表示時に小数第3位または第1位へ丸めている。</p>
+    </footer>
+  </main>
+</body>
+</html>
