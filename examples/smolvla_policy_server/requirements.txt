@@ -1,0 +1,8 @@
+# torch / numpy / FastAPI は採点イメージの CUDA 13 対応版を使用する。
+accelerate==1.14.0
+draccus==0.10.0
+gymnasium==1.2.3
+num2words==0.5.14
+safetensors==0.6.2
+tokenizers==0.22.2
+transformers==5.4.0
