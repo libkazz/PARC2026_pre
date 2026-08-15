@@ -1,13 +1,15 @@
 # SmolVLA 提出サーバー
 
 `examples/smolvla_libero_spatial_lora.ipynb` で作成したマージ済みモデルを、PARC2026
-Track 1 のオフライン提出 ZIP に変換する実装です。
+Track 1 のオフライン提出 ZIP に変換する実装です。Notebook の最終セルからも
+同じビルダーが自動実行されます。
 
 ## 1. 学習成果物を用意する
 
-Colab で Notebook を上から順に実行し、最後に作られる
-`smolvla_libero_plus_spatial_lora_merged.zip` をダウンロードして展開します。更新済み
-Notebook はモデル本体だけでなく、オフライン推論に必要な VLM の config と tokenizer を
+Colab で Notebook を上から順に実行すると、最後に提出可能な
+`PARC2026_track1_submission.zip` が作られます。通常はそのまま提出できるため、以下は
+マージ済みモデルのディレクトリから提出 ZIP を手動で作り直す場合の手順です。Notebook は
+モデル本体だけでなく、オフライン推論に必要な VLM の config と tokenizer を
 `vlm_assets/` に保存します。
 
 ## 2. 提出 ZIP を作る
