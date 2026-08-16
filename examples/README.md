@@ -58,11 +58,13 @@ CPU でもセルは実行できるが、学習と評価には非常に長い時�
 
 ### 提出物にするまでの作業
 
-出力されるのは LeRobot 形式のモデル重みであり、これ単体では提出できない。
-[submission_template/](../submission_template/) の `MyPolicy` にモデルを組み込み、
-ポリシーサーバーの形にする。観測と action の仕様は
-[submission_template/policy_server.py](../submission_template/policy_server.py)
-の docstring にある。
+Notebook の最終セルは、学習済みモデルにポリシーサーバーとオフライン実行環境を同梱した
+`PARC2026_track1_submission.zip` を作成する。この ZIP はルート直下に必須の
+`policy_server.py` と `requirements.txt` を含み、静的検査に合格した場合だけダウンロードされる。
+採点環境には、モデル重みだけをまとめた ZIP ではなく、この提出 ZIP をアップロードする。
+
+Notebook とは別に提出 ZIP を作り直す場合は、
+[smolvla_policy_server/README.md](smolvla_policy_server/README.md) の手順を使用する。
 
 推論は 1 リクエストあたり 10 秒以内に収める必要がある
 （[ルートの README](../README.md#タイムアウト仕様)）。

@@ -95,6 +95,24 @@ def test_colab_only_operations_are_guarded():
     )
 
 
+def test_notebook_exports_a_validatable_submission_zip():
+    source = "\n".join(_code_cells())
+    artifact_export = next(
+        cell
+        for cell in _code_cells()
+        if "SUBMISSION_RUNTIME_REVISION" in cell
+        and "build_submission.py" in cell
+    )
+
+    assert 'WORK_DIR / "PARC2026_track1_submission.zip"' in source
+    assert '"policy_server.py"' in artifact_export
+    assert '"requirements.txt"' in artifact_export
+    assert '"validate_submission.py"' in artifact_export
+    assert '"--static"' in artifact_export
+    assert "files.download(str(SUBMISSION_ZIP_PATH))" in artifact_export
+    assert "files.download(str(MERGED_ZIP_PATH))" not in source
+
+
 def test_notebook_selects_an_available_torch_device():
     source = "\n".join(_code_cells())
 
